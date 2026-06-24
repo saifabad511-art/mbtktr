@@ -3,21 +3,28 @@ workflows:
     name: Android APK Build
     max_build_duration: 60
     scripts:
-      - name: Unzip project files
+      - name: Unzip and prepare files
         script: |
           echo "جاري فك ضغط ملفات المشروع..."
-          unzip *.zip
+          unzip -o *.zip
           
-          # التحقق مما إذا كانت الملفات استخرجت داخل مجلد فرعي ونقلها للرئيسي
-          if [ ! -f "gradlew" ]; then
-            subfolder=$(find . -maxdepth 2 -name "gradlew" -exec dirname {} \;)
+          # التحقق من مكان ملفات الأندرويد ونقلها للرئيسي إذا كانت داخل مجلد فرعي
+          if [ ! -f "build.gradle.kts" ] && [ ! -f "build.gradle" ]; then
+            subfolder=$(find . -maxdepth 2 -name "build.gradle*" -exec dirname {} \;)
             if [ -n "$subfolder" ] && [ "$subfolder" != "." ]; then
+              echo "نقل الملفات من المجلد الفرعي: $subfolder"
               cp -r $subfolder/* .
             fi
           fi
-      - name: Set execute permission for gradlew
-        script: chmod +x gradlew
       - name: Build Android APK
-        script: ./gradlew assembleDebug
+        script: |
+          # إذا كان ملف gradlew مفقوداً (مثل تصدير AI Studio)، نستخدم نظام gradle العام بالسيرفر
+          if [ -f "gradlew" ]; then
+            chmod +x gradlew
+            ./gradlew assembleDebug
+          else
+            echo "ملف gradlew غير موجود، يتم البناء باستخدام الـ Gradle الافتراضي للسيرفر..."
+            gradle assembleDebug
+          fi
     artifacts:
       - app/build/outputs/apk/**/*.apk
