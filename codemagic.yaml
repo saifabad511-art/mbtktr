@@ -1,0 +1,24 @@
+workflows:
+  android-apk-build:
+    name: Android APK Build
+    instance_type: linux
+    max_build_duration: 60
+    scripts:
+      - name: Unzip project files
+        script: |
+          echo "جاري فك ضغط ملفات المشروع..."
+          unzip *.zip
+          
+          # التحقق مما إذا كانت الملفات استخرجت داخل مجلد فرعي ونقلها للرئيسي
+          if [ ! -f "gradlew" ]; then
+            subfolder=$(find . -maxdepth 2 -name "gradlew" -exec dirname {} \;)
+            if [ -n "$subfolder" ] && [ "$subfolder" != "." ]; then
+              cp -r $subfolder/* .
+            fi
+          fi
+      - name: Set execute permission for gradlew
+        script: chmod +x gradlew
+      - name: Build Android APK
+        script: ./gradlew assembleDebug
+    artifacts:
+      - app/build/outputs/apk/**/*.apk
