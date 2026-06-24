@@ -8,22 +8,21 @@ workflows:
           echo "جاري فك ضغط ملفات المشروع..."
           unzip -o *.zip
           
-          # التحقق من مكان ملفات الأندرويد ونقلها للرئيسي إذا كانت داخل مجلد فرعي
+          # نقل الملفات من المجلد الفرعي للرئيسي إذا كانت مستخرجة داخل مجلد
           if [ ! -f "build.gradle.kts" ] && [ ! -f "build.gradle" ]; then
             subfolder=$(find . -maxdepth 2 -name "build.gradle*" -exec dirname {} \;)
             if [ -n "$subfolder" ] && [ "$subfolder" != "." ]; then
-              echo "نقل الملفات من المجلد الفرعي: $subfolder"
+              echo "نقل الملفات من: $subfolder"
               cp -r $subfolder/* .
             fi
           fi
-      - name: Build Android APK
+      - name: Build Android APK using Project Wrapper
         script: |
-          # إذا كان ملف gradlew مفقوداً (مثل تصدير AI Studio)، نستخدم نظام gradle العام بالسيرفر
-          if [ -f "gradlew" ]; then
-            chmod +x gradlew
-            ./gradlew assembleDebug
+          echo "بدء بناء التطبيق بالإصدار المتوافق تماماً..."
+          if [ -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain assembleDebug
           else
-            echo "ملف gradlew غير موجود، يتم البناء باستخدام الـ Gradle الافتراضي للسيرفر..."
+            echo "الملف مفقود، المحاولة بالنظام الافتراضي..."
             gradle assembleDebug
           fi
     artifacts:
